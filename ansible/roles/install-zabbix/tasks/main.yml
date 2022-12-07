@@ -1,0 +1,77 @@
+---
+- name: Install Zabbix repository 
+  get_url:
+    url: https://repo.zabbix.com/zabbix/6.2/ubuntu/pool/main/z/zabbix-release/zabbix-release_6.2-4%2Bubuntu20.04_all.deb
+    dest: /tmp/zabbix-release_6.2-4-ubuntu20.04_all.deb
+
+- name: "Debian | install package"
+  apt:
+    deb: "/tmp/zabbix-release_6.2-4-ubuntu20.04_all.deb"
+    dpkg_options: 'force-confnew,force-confdef'
+  register: install
+
+- name: Update apt
+  apt:
+    update_cache: yes
+
+- name: Install python3-mysqldb
+  apt:
+    name: python3-mysqldb
+    state: present
+
+- name: Install Zabbix server, frontend, agent
+  apt:
+    name: "{{ packages }}"
+    state: present
+
+- name: Create initial database 
+  mysql_db:
+    name: "{{ DBName }}"
+    encoding: utf8 
+    collation: utf8_bin
+    login_host: localhost
+    login_user: root
+    login_password: root
+    
+- name: Create User
+  mysql_user:
+    login_host: localhost
+    login_user: root
+    login_password: root
+    name: "{{ DBUser }}"
+    password: "{{ DBPassword }}"
+    priv: '*.*:ALL' 
+    state: present
+    host: localhost
+
+- name: Unzip file server.sql.gz
+  command: gunzip /usr/share/zabbix-sql-scripts/mysql/server.sql.gz   
+
+- name: Import initial schema and data
+  mysql_db:   
+    state: import
+    login_host: localhost
+    login_user: root
+    login_password: root
+    name: "{{ DBName }}"
+    collation: utf8_bin
+    encoding: utf8 
+    target: /usr/share/zabbix-sql-scripts/mysql/server.sql
+
+- name: Copy zabbix server template
+  template: 
+    src: zabbix_server.conf
+    dest: /etc/zabbix/zabbix-server.conf
+
+- name: Start Zabbix server service
+  service: name=zabbix-server state=restarted
+
+- name: Start Zabbix agent service
+  service: name=zabbix-agent state=restarted
+
+- name: Start apache2
+  service: name=apache2 state=restarted
+...
+
+
+

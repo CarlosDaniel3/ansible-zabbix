@@ -1,0 +1,10 @@
+packages:
+- zabbix-server-mysql 
+- zabbix-frontend-php 
+- zabbix-apache-conf 
+- zabbix-sql-scripts 
+- zabbix-agent
+
+DBName: zabbix
+DBUser: zabbix
+DBPassword: zabbix2020
